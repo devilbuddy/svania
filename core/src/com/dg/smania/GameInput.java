@@ -8,6 +8,7 @@ import com.badlogic.gdx.Gdx;
 public class GameInput {
 
 
+
     public void update() {
 
     }

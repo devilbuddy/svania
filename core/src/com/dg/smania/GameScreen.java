@@ -59,13 +59,21 @@ public class GameScreen {
         hudCamera.setToOrtho(false, width, height);
         cameraController.resize(width, height);
     }
-
+float foo = 0;
     public void update(float delta) {
         cameraController.update(delta);
         world.update(delta);
+
+        foo+=delta;
+        if(foo > 5) {
+            cameraController.shakeScreen(3, 2);
+            foo = 0;
+        }
     }
 
     public void draw() {
+
+
 
         parallaxBackground.camera.viewportWidth = cameraController.width;
         parallaxBackground.camera.viewportHeight = cameraController.height;

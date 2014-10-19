@@ -22,7 +22,7 @@ public class Entity {
         JUMPING
     }
 
-    private static class CollissionRect extends Rectangle {
+    private static class CollisionRect extends Rectangle {
         public Assets.CellType cellType;
     }
 
@@ -41,13 +41,13 @@ public class Entity {
     float height = 7.5f;
     Rectangle boundingBox = new Rectangle();
     boolean grounded = false;
-    private Pool<CollissionRect> rectPool = new Pool<CollissionRect>() {
+    private Pool<CollisionRect> rectPool = new Pool<CollisionRect>() {
         @Override
-        protected CollissionRect newObject() {
-            return new CollissionRect();
+        protected CollisionRect newObject() {
+            return new CollisionRect();
         }
     };
-    private Array<CollissionRect> tiles = new Array<CollissionRect>();
+    private Array<CollisionRect> tiles = new Array<CollisionRect>();
 
     public Entity() {
 
@@ -104,7 +104,7 @@ public class Entity {
         velocity.scl(delta);
 
         // perform collision detection & response, on each axis, separately
-        // if the koala is moving right, check the tiles to the right of it's
+        // if the moving right, check the tiles to the right of it's
         // right bounding box edge, otherwise check the ones to the left
 
         boundingBox.set(position.x, position.y, width, height);
@@ -122,16 +122,16 @@ public class Entity {
         endY = (int) ((position.y + height) / Assets.TILE_SIZE);
         getCollissionTiles(startX, startY, endX, endY, tiles);
         boundingBox.x += velocity.x;
-        for (CollissionRect tile : tiles) {
-            boolean solid = tile.cellType == Assets.CellType.BLOCK;
-            if (solid && boundingBox.overlaps(tile)) {
+        for (CollisionRect rect : tiles) {
+            boolean solid = rect.cellType == Assets.CellType.BLOCK;
+            if (solid && boundingBox.overlaps(rect)) {
                 velocity.x = 0;
                 break;
             }
         }
         boundingBox.x = position.x;
 
-        // if the koala is moving upwards, check the tiles to the top of it's
+        // if the moving upwards, check the tiles to the top of it's
         // top bounding box edge, otherwise check the ones to the bottom
         if (velocity.y > 0) {
             startY = endY = (int) ((position.y + height + velocity.y) / Assets.TILE_SIZE);
@@ -143,27 +143,26 @@ public class Entity {
         getCollissionTiles(startX, startY, endX, endY, tiles);
 
         // bottom position prior to movement
-        float oldBottom = boundingBox.y;
+        float oldBottomY = boundingBox.y;
 
         boundingBox.y += velocity.y;
-        for (CollissionRect tile : tiles) {
-            if (boundingBox.overlaps(tile)) {
-                boolean solid = tile.cellType == Assets.CellType.BLOCK;
+        for (CollisionRect rect : tiles) {
+            if (boundingBox.overlaps(rect)) {
+                boolean solid = rect.cellType == Assets.CellType.BLOCK;
 
-                if (tile.cellType == Assets.CellType.JUMP_THROUGH) {
-                    if (oldBottom >= tile.y + tile.height) {
+                if (rect.cellType == Assets.CellType.JUMP_THROUGH) {
+                    if (oldBottomY >= rect.y + rect.height) {
                         solid = true;
                     }
                 }
 
                 if(solid) {
-                    // we actually reset the koala y-position here
-                    // so it is just below/above the tile we collided with
-                    // this removes bouncing :)
+                    // reset the y-position here so it is just below/above the rect we collided with
+                    // this removes bouncing
                     if (velocity.y > 0) {
-                        position.y = tile.y - height;
+                        position.y = rect.y - height;
                     } else {
-                        position.y = tile.y + tile.height;
+                        position.y = rect.y + rect.height;
                         // if we hit the ground, mark us as grounded so we can jump
                         grounded = true;
                         setState(State.WALKING);
@@ -185,14 +184,14 @@ public class Entity {
         velocity.x *= DAMPING;
     }
 
-    private void getCollissionTiles(int startX, int startY, int endX, int endY, Array<CollissionRect> tiles) {
+    private void getCollissionTiles(int startX, int startY, int endX, int endY, Array<CollisionRect> tiles) {
         rectPool.freeAll(tiles);
         tiles.clear();
         for (int y = startY; y <= endY; y++) {
             for (int x = startX; x <= endX; x++) {
                 Assets.CellType cellType = world.getCellType(x, y);
                 if (cellType != Assets.CellType.VOID) {
-                    CollissionRect rect = rectPool.obtain();
+                    CollisionRect rect = rectPool.obtain();
                     rect.set(x * Assets.TILE_SIZE, y * Assets.TILE_SIZE, Assets.TILE_SIZE, Assets.TILE_SIZE);
                     rect.cellType = cellType;
                     tiles.add(rect);

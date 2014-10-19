@@ -4,6 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.Vector3;
 
+import java.util.Random;
+
 /**
  * Created by magnus on 2014-10-14.
  */
@@ -16,6 +18,7 @@ public class CameraController {
     private Entity focus;
     private Vector3 focusPosition = new Vector3();
     private Vector3 tmp = new Vector3();
+    private Vector3 cameraPosition = new Vector3();
 
     float camMinX;
     float camMaxX;;
@@ -60,9 +63,13 @@ public class CameraController {
     }
 
     public void update(float delta) {
+        updateRumble(delta);
+
         if(focus != null) {
 
             focusPosition.set((int)focus.position.x, (int)focus.position.y, 0);
+
+
 
             if(focusPosition.x < camMinX)
                 focusPosition.x = camMinX;
@@ -74,15 +81,54 @@ public class CameraController {
             if(focusPosition.y > camMaxY)
                 focusPosition.y = camMaxY;
 
-            camera.position.lerp(focusPosition, 5f*delta);
+            cameraPosition.lerp(focusPosition, 5f*delta);
 
-            float len = tmp.set(camera.position).sub(focusPosition).len();
+            float len = tmp.set(cameraPosition).sub(focusPosition).len();
             if(len < 0.1f) {
-                camera.position.set(focusPosition);
+                cameraPosition.set(focusPosition);
             }
+
+            if(rumbleActive) {
+                cameraPosition.add(rumbleX, rumbleY, 0);
+            }
+
+            camera.position.set(cameraPosition);
 
             camera.update();
         }
     }
 
+
+
+
+    // fields
+    private Random random = new Random();
+    private float rumbleX;
+    private float rumbleY;
+    private float rumbleTime;
+    private float currentRumbleTime;
+    private float rumblePower;
+    private float currentRumblePower;
+    private boolean rumbleActive;
+    // methods
+    public void updateRumble(float delta) {
+        if(currentRumbleTime < rumbleTime) {
+            rumbleActive = true;
+            currentRumblePower = rumblePower * ((rumbleTime - currentRumbleTime) / rumbleTime);
+
+            rumbleX = (random.nextFloat() - 0.5f) * 2 * currentRumblePower;
+            rumbleY = (random.nextFloat() - 0.5f) * 2 * currentRumblePower;
+
+            currentRumbleTime += delta;
+        } else {
+            rumbleActive = false;
+        }
+    }
+
+
+    public void shakeScreen(float power, int time) {
+        rumblePower = power;
+        rumbleTime = time;
+        currentRumbleTime = 0;
+    }
 }
