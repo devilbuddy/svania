@@ -108,6 +108,10 @@ public class Entity {
         this.physicsProperties = physicsProperties;
     }
 
+    public boolean isAlive() {
+        return true;
+    }
+
     private void setState(State state) {
         if(state != this.state) {
             this.state = state;
@@ -185,6 +189,7 @@ public class Entity {
             boolean solid = rect.cellType == Assets.CellType.BLOCK;
             if (solid && boundingBox.overlaps(rect)) {
                 velocity.x = 0;
+                onCollission();
                 break;
             }
         }
@@ -226,6 +231,7 @@ public class Entity {
                         grounded = true;
                         setState(State.WALKING);
                     }
+                    onCollission();
                     velocity.y = 0;
                     break;
                 }
@@ -244,6 +250,13 @@ public class Entity {
     }
 
     protected void onAction() {
+    }
+
+    protected void onCollission() {
+    }
+
+    protected void onRemoved() {
+
     }
 
     private void getCollissionTiles(int startX, int startY, int endX, int endY, Array<CollisionRect> tiles) {

@@ -91,48 +91,28 @@ float foo = 0;
         spriteBatch.setColor(Color.WHITE);
         for(int i = 0; i < world.entities.size(); i++) {
             Entity entity = world.entities.get(i);
-            Animation animation;
-            switch (entity.state) {
-                case STANDING: {
-                    if (entity.direction == Entity.Direction.RIGHT) {
-                        animation = assets.standRightAnimation;
-                    } else {
-                        animation = assets.standLeftAnimation;
-                    }
-                    break;
-                }
-                case JUMPING: {
-                    if (entity.direction == Entity.Direction.RIGHT) {
-                        animation = assets.jumpRightAnimation;
-                    } else {
-                        animation = assets.jumpLeftAnimation;
-                    }
-                    break;
-                }
-                default:{
-                    if(entity.direction == Entity.Direction.RIGHT) {
-                        animation = assets.walkRightAnimation;
-                    } else {
-
-                        animation = assets.walkLeftAnimation;
-                    }
-                }
-            }
+            Animation animation = assets.getAnimation(entity);
             spriteBatch.draw(animation.getKeyFrame(entity.stateTime), entity.position.x - 2, entity.position.y);
+
         }
 
         spriteBatch.setProjectionMatrix(hudCamera.combined);
         spriteBatch.setColor(1, 1, 1, 0.5f);
         assets.patch.draw(spriteBatch, 1, 1, buttonSize, buttonSize);
 
-
         spriteBatch.end();
 
         /*
         shapeRenderer.setProjectionMatrix(cameraController.getCamera().combined);
         shapeRenderer.begin();
-        shapeRenderer.rect(world.player.position.x, world.player.position.y, world.player.width, world.player.height);
+
+        for(int i = 0; i < world.entities.size(); i++) {
+            Entity entity = world.entities.get(i);
+            shapeRenderer.rect(entity.position.x, entity.position.y, entity.width, entity.height);
+
+        }
         shapeRenderer.end();
         */
     }
+
 }

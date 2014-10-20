@@ -43,7 +43,7 @@ public class Player extends Entity {
         fireTimer+=delta;
     }
 
-    private float fireInterval = 1f;
+    private float fireInterval = 0.25f;
     private float fireTimer = fireInterval;
     @Override
     protected void onAction() {
@@ -51,7 +51,7 @@ public class Player extends Entity {
         if(fireTimer >= fireInterval) {
             //fire
             Bullet bullet = Bullet.obtain();
-            bullet.position.set(position.x, position.y);
+            bullet.position.set(position.x, position.y + 5);
             bullet.velocity.set(direction.sign * bullet.physicsProperties.maxVelocity, 0);
 
             world.addEntity(bullet);

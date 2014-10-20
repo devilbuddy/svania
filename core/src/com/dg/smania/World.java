@@ -36,8 +36,13 @@ public class World {
     }
 
     public void update(float delta) {
-        for(int i = 0; i < entities.size(); i++) {
-            entities.get(i).update(delta);
+        for (int i = entities.size() - 1; i >= 0; i--) {
+            Entity entity = entities.get(i);
+            entity.update(delta);
+            if(!entity.isAlive()) {
+                entities.remove(i);
+                entity.onRemoved();
+            }
         }
     }
 

@@ -138,12 +138,17 @@ public class Assets {
         }
     }
 
+    private interface AnimationLookup {
+        Animation getAnimation(Entity.State state);
+    }
 
     public static final int TILE_SIZE = 8;
 
     private Texture tilesTexture;
     private Texture astronautTexture;
     private Texture hudTexture;
+    private Texture effectsTexture;
+
     private TileSet tileSet;
 
     public Animation walkRightAnimation;
@@ -152,6 +157,8 @@ public class Assets {
     public Animation standLeftAnimation;
     public Animation jumpRightAnimation;
     public Animation jumpLeftAnimation;
+
+    public Animation bulletAnimation;
 
     public TextureRegion background;
 
@@ -192,6 +199,45 @@ public class Assets {
         TextureRegion buttonRegion = new TextureRegion(hudTexture, 0, 0, 8, 8);
         patch = new NinePatch(buttonRegion, 2, 2, 2, 2);
 
+        effectsTexture = new Texture(Gdx.files.internal("effects.png"));
+
+        bulletAnimation = new Animation(0.15f, new TextureRegion(effectsTexture,5, 5, 3, 1));
+    }
+
+    public Animation getAnimation(Entity entity) {
+        if(entity.getClass().equals(Bullet.class)) {
+            return bulletAnimation;
+        } else {
+
+            Animation animation;
+            switch (entity.state) {
+                case STANDING: {
+                    if (entity.direction == Entity.Direction.RIGHT) {
+                        animation = standRightAnimation;
+                    } else {
+                        animation = standLeftAnimation;
+                    }
+                    break;
+                }
+                case JUMPING: {
+                    if (entity.direction == Entity.Direction.RIGHT) {
+                        animation = jumpRightAnimation;
+                    } else {
+                        animation = jumpLeftAnimation;
+                    }
+                    break;
+                }
+                default:{
+                    if(entity.direction == Entity.Direction.RIGHT) {
+                        animation = walkRightAnimation;
+                    } else {
+
+                        animation = walkLeftAnimation;
+                    }
+                }
+            }
+            return animation;
+        }
     }
 
     public enum CellType {
