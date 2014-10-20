@@ -126,7 +126,7 @@ public class CameraController {
     }
 
 
-    public void shakeScreen(float power, int time) {
+    public void shakeScreen(float power, float time) {
         rumblePower = power;
         rumbleTime = time;
         currentRumbleTime = 0;

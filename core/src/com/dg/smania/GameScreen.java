@@ -66,7 +66,7 @@ float foo = 0;
 
         foo+=delta;
         if(foo > 5) {
-            cameraController.shakeScreen(3, 2);
+            cameraController.shakeScreen(0.5f, 0.5f);
             foo = 0;
         }
     }

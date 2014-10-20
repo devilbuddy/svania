@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by magnus on 2014-10-14.
@@ -105,11 +106,11 @@ public class Assets {
         CellType[][] collisionMap;
     }
 
-
-
     private static class TileSet {
         private TiledMapTileSet tiledMapTileSet = new TiledMapTileSet();
-        private java.util.Map<Integer, MapTile> tiles = new HashMap<Integer, MapTile>();
+        private Map<Integer, MapTile> tiles = new HashMap<Integer, MapTile>();
+
+        private Map<Integer, CellType> cellTypes = new HashMap<Integer, CellType>();
 
         public void addTile(int id, CellType cellType, TextureRegion textureRegion) {
             addTile(id, cellType, textureRegion, false, 0, 0);
@@ -121,9 +122,15 @@ public class Assets {
             mapTile.setOffsetY(offsetY);
             tiledMapTileSet.putTile(id, mapTile);
             tiles.put(id, mapTile);
+            cellTypes.put(id, cellType);
         }
+
         public MapTile getMapTile(int id) {
             return tiles.get(id);
+        }
+
+        public CellType getCellType(int id) {
+            return cellTypes.get(id);
         }
 
         public TiledMapTileSet getTiledMapTileSet() {
@@ -149,6 +156,7 @@ public class Assets {
     public TextureRegion background;
 
     public NinePatch patch;
+
 
     public Assets() {
 
@@ -187,9 +195,14 @@ public class Assets {
     }
 
     public enum CellType {
-        VOID,
-        BLOCK,
-        JUMP_THROUGH
+        VOID(0),
+        BLOCK(1),
+        JUMP_THROUGH(2);
+
+        private int id;
+        private CellType(int id) {
+            this.id = id;
+        }
     }
 
     public MapData loadMap(String name) {
@@ -226,6 +239,7 @@ public class Assets {
                 }
             }
         }
+
         tiledMap.getLayers().add(tileLayer);
 
         MapData mapData = new MapData();

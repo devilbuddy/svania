@@ -15,10 +15,19 @@ public class World {
     int width;
     int height;
     public World() {
-        player = new Entity();
+        player = new Player();
         player.position.set(10, 8);
 
         addEntity(player);
+
+        Monster monster1 = new Monster();
+        monster1.position.set(100, 100);
+        addEntity(monster1);
+
+
+        Monster monster2 = new Monster();
+        monster2.position.set(200, 100);
+        addEntity(monster2);
     }
 
     public void addEntity(Entity entity) {
@@ -39,7 +48,7 @@ public class World {
     }
 
     public Assets.CellType getCellType(int x, int y) {
-        if(x < 0 || x > width || y < 0 || y > height) {
+        if(x < 0 || x >= width || y < 0 || y >= height) {
             return Assets.CellType.BLOCK;
         }
         return collissionMap[y][x];

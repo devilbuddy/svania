@@ -11,9 +11,44 @@ import com.badlogic.gdx.utils.Pool;
  */
 public class Entity {
 
+    public interface EntityInput {
+        boolean action();
+        boolean jump();
+        boolean left();
+        boolean right();
+    }
+
+    private static EntityInput voidInput = new EntityInput() {
+
+        @Override
+        public boolean action() {
+            return false;
+        }
+
+        @Override
+        public boolean jump() {
+            return false;
+        }
+
+        @Override
+        public boolean left() {
+            return false;
+        }
+
+        @Override
+        public boolean right() {
+            return false;
+        }
+    };
+
     public enum Direction {
-        LEFT,
-        RIGHT
+        LEFT(-1),
+        RIGHT(1);
+
+        public final int sign;
+        private Direction(int sign) {
+            this.sign = sign;
+        }
     }
 
     public enum State {
@@ -24,13 +59,25 @@ public class Entity {
 
     private static class CollisionRect extends Rectangle {
         public Assets.CellType cellType;
+    };
+
+    public static class PhysicsProperties {
+
+        public PhysicsProperties(float maxVelocity, float jumpVelocity, float damping, boolean affectedByGravity) {
+            this.maxVelocity = maxVelocity;
+            this.jumpVelocity = jumpVelocity;
+            this.damping = damping;
+            this.affectedByGravity = affectedByGravity;
+        }
+
+        public float maxVelocity;
+        public float jumpVelocity;
+        public float damping;
+        boolean affectedByGravity;
     }
 
     private static final String tag = "Entity";
     private static final float GRAVITY = -2.5f;
-    static float MAX_VELOCITY = 35f;
-    static float JUMP_VELOCITY = 75f;
-    static float DAMPING = 0.93f;
     public final Vector2 position = new Vector2();
     public final Vector2 velocity = new Vector2();
     public World world;
@@ -49,8 +96,16 @@ public class Entity {
     };
     private Array<CollisionRect> tiles = new Array<CollisionRect>();
 
-    public Entity() {
+    private final EntityInput entityInput;
+    public final PhysicsProperties physicsProperties;
 
+    public Entity(PhysicsProperties physicsProperties) {
+        this(voidInput, physicsProperties);
+    }
+
+    public Entity(EntityInput entityInput, PhysicsProperties physicsProperties) {
+        this.entityInput = entityInput;
+        this.physicsProperties = physicsProperties;
     }
 
     private void setState(State state) {
@@ -63,32 +118,36 @@ public class Entity {
     public void update(float delta) {
         stateTime += delta;
 
-        if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SPACE) && grounded) {
-            velocity.y += JUMP_VELOCITY;
+        if (entityInput.action()) {
+            onAction();
+        }
+        if (entityInput.jump() && grounded) {
+            velocity.y += physicsProperties.jumpVelocity;
             setState(State.JUMPING);
             grounded = false;
         }
-        if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.LEFT)) {
-            velocity.x = -MAX_VELOCITY;
+        if (entityInput.left()) {
+            velocity.x = -physicsProperties.maxVelocity;
             if (grounded) {
                 setState(State.WALKING);
             }
             direction = Direction.LEFT;
         }
-        if (Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.RIGHT)) {
-            velocity.x = MAX_VELOCITY;
+        if (entityInput.right()) {
+            velocity.x = physicsProperties.maxVelocity;
             if (grounded) {
                 setState(State.WALKING);
             }
             direction = Direction.RIGHT;
         }
 
-        // apply gravity if we are falling
-        velocity.add(0, GRAVITY);
-
+        if(physicsProperties.affectedByGravity) {
+            // apply gravity
+            velocity.add(0, GRAVITY);
+        }
         // clamp the velocity to the maximum, x-axis only
-        if (Math.abs(velocity.x) > MAX_VELOCITY) {
-            velocity.x = Math.signum(velocity.x) * MAX_VELOCITY;
+        if (Math.abs(velocity.x) > physicsProperties.maxVelocity) {
+            velocity.x = Math.signum(velocity.x) * physicsProperties.maxVelocity;
         }
 
         // clamp the velocity to 0 if it's < 1, and set the state to standing
@@ -181,7 +240,10 @@ public class Entity {
 
         // Apply damping to the velocity on the x-axis so we don't
         // walk infinitely once a key was pressed
-        velocity.x *= DAMPING;
+        velocity.x *= physicsProperties.damping;
+    }
+
+    protected void onAction() {
     }
 
     private void getCollissionTiles(int startX, int startY, int endX, int endY, Array<CollisionRect> tiles) {
