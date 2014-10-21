@@ -59,16 +59,10 @@ public class GameScreen {
         hudCamera.setToOrtho(false, width, height);
         cameraController.resize(width, height);
     }
-float foo = 0;
+
     public void update(float delta) {
         cameraController.update(delta);
         world.update(delta);
-
-        foo+=delta;
-        if(foo > 5) {
-            cameraController.shakeScreen(0.5f, 0.5f);
-            foo = 0;
-        }
     }
 
     public void draw() {

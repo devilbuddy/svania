@@ -16,6 +16,8 @@ import com.badlogic.gdx.utils.JsonValue;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.badlogic.gdx.graphics.g2d.Animation.PlayMode.*;
+
 /**
  * Created by magnus on 2014-10-14.
  */
@@ -139,7 +141,7 @@ public class Assets {
     }
 
     private interface AnimationLookup {
-        Animation getAnimation(Entity.State state);
+        Animation getAnimation(Entity.State state, Entity.Direction direction);
     }
 
     public static final int TILE_SIZE = 8;
@@ -150,25 +152,17 @@ public class Assets {
     private Texture effectsTexture;
 
     private TileSet tileSet;
-
-    public Animation walkRightAnimation;
-    public Animation walkLeftAnimation;
-    public Animation standRightAnimation;
-    public Animation standLeftAnimation;
-    public Animation jumpRightAnimation;
-    public Animation jumpLeftAnimation;
-
-    public Animation bulletAnimation;
-
     public TextureRegion background;
-
     public NinePatch patch;
 
+    private Map<Class, AnimationLookup> entityAnimations = new HashMap<Class, AnimationLookup>();
 
     public Assets() {
 
         tilesTexture = new Texture(Gdx.files.internal("8x8_tiles.png"));
-
+        astronautTexture = new Texture(Gdx.files.internal("astro.png"));
+        hudTexture = new Texture(Gdx.files.internal("hud_tiles.png"));
+        effectsTexture = new Texture(Gdx.files.internal("effects.png"));
 
         background = new TextureRegion(tilesTexture, 0,72,24,24);
 
@@ -179,65 +173,87 @@ public class Assets {
         tileSet.addTile(2, CellType.JUMP_THROUGH, platform, true, 0, 3);
         tileSet.addTile(3, CellType.BLOCK, tileRegions[5][5]);
 
-        astronautTexture = new Texture(Gdx.files.internal("astro.png"));
+        setupAnimations();
+
+        TextureRegion buttonRegion = new TextureRegion(hudTexture, 0, 0, 8, 8);
+        patch = new NinePatch(buttonRegion, 2, 2, 2, 2);
+    }
+
+    private void setupAnimations() {
+
         TextureRegion[] astronautRightFrames = TextureRegion.split(astronautTexture, 10, 10)[0];
-        walkRightAnimation = new Animation(0.15f, astronautRightFrames[0], astronautRightFrames[1], astronautRightFrames[2], astronautRightFrames[3], astronautRightFrames[4], astronautRightFrames[5]);
-        walkRightAnimation.setPlayMode(Animation.PlayMode.LOOP);
-        standRightAnimation = new Animation(0.15f,astronautRightFrames[0]);
-        jumpRightAnimation = new Animation(0.15f, astronautRightFrames[6], astronautRightFrames[7]);
+        final Animation walkRightAnimation = new Animation(0.15f, astronautRightFrames[0], astronautRightFrames[1], astronautRightFrames[2], astronautRightFrames[3], astronautRightFrames[4], astronautRightFrames[5]);
+        walkRightAnimation.setPlayMode(LOOP);
+        final Animation standRightAnimation = new Animation(0.15f,astronautRightFrames[0]);
+        final Animation jumpRightAnimation = new Animation(0.15f, astronautRightFrames[6], astronautRightFrames[7]);
 
         TextureRegion[] astronautLeftFrames = TextureRegion.split(astronautTexture, 10, 10)[0];
         for(int i = 0; i < astronautLeftFrames.length; i++) {
             astronautLeftFrames[i].flip(true, false);
         }
-        walkLeftAnimation = new Animation(0.15f, astronautLeftFrames[0], astronautLeftFrames[1], astronautLeftFrames[2], astronautLeftFrames[3], astronautLeftFrames[4], astronautLeftFrames[5]);
-        walkLeftAnimation.setPlayMode(Animation.PlayMode.LOOP);
-        standLeftAnimation = new Animation(0.15f, astronautLeftFrames[0]);
-        jumpLeftAnimation = new Animation(0.15f, astronautLeftFrames[6], astronautLeftFrames[7]);
+        final Animation walkLeftAnimation = new Animation(0.15f, astronautLeftFrames[0], astronautLeftFrames[1], astronautLeftFrames[2], astronautLeftFrames[3], astronautLeftFrames[4], astronautLeftFrames[5]);
+        walkLeftAnimation.setPlayMode(LOOP);
+        final Animation standLeftAnimation = new Animation(0.15f, astronautLeftFrames[0]);
+        final Animation jumpLeftAnimation = new Animation(0.15f, astronautLeftFrames[6], astronautLeftFrames[7]);
 
-        hudTexture = new Texture(Gdx.files.internal("hud_tiles.png"));
-        TextureRegion buttonRegion = new TextureRegion(hudTexture, 0, 0, 8, 8);
-        patch = new NinePatch(buttonRegion, 2, 2, 2, 2);
+        entityAnimations.put(Player.class, new AnimationLookup() {
 
-        effectsTexture = new Texture(Gdx.files.internal("effects.png"));
+            @Override
+            public Animation getAnimation(Entity.State state, Entity.Direction direction) {
+                Animation animation;
 
-        bulletAnimation = new Animation(0.15f, new TextureRegion(effectsTexture,5, 5, 3, 1));
+                switch (state) {
+                    case STANDING: {
+                        if (direction == Entity.Direction.RIGHT) {
+                            animation = standRightAnimation;
+                        } else {
+                            animation = standLeftAnimation;
+                        }
+                        break;
+                    }
+                    case JUMPING: {
+                        if (direction == Entity.Direction.RIGHT) {
+                            animation = jumpRightAnimation;
+                        } else {
+                            animation = jumpLeftAnimation;
+                        }
+                        break;
+                    }
+                    default:{
+                        if(direction == Entity.Direction.RIGHT) {
+                            animation = walkRightAnimation;
+                        } else {
+
+                            animation = walkLeftAnimation;
+                        }
+                    }
+                }
+                return animation;
+            }
+        });
+
+        final Animation monsterAnimation = new Animation(0.15f, astronautRightFrames[0], astronautRightFrames[1], astronautRightFrames[2], astronautRightFrames[3], astronautRightFrames[4], astronautRightFrames[5]);
+        monsterAnimation.setPlayMode(LOOP);
+
+        entityAnimations.put(Monster.class, new AnimationLookup() {
+            @Override
+            public Animation getAnimation(Entity.State state, Entity.Direction direction) {
+                return monsterAnimation;
+            }
+        });
+
+        entityAnimations.put(Bullet.class, new AnimationLookup() {
+            Animation animation = new Animation(0.15f, new TextureRegion(effectsTexture,5, 5, 3, 1));
+            @Override
+            public Animation getAnimation(Entity.State state, Entity.Direction direction) {
+                return animation;
+            }
+        });
+
     }
 
     public Animation getAnimation(Entity entity) {
-        if(entity.getClass().equals(Bullet.class)) {
-            return bulletAnimation;
-        } else {
-
-            Animation animation;
-            switch (entity.state) {
-                case STANDING: {
-                    if (entity.direction == Entity.Direction.RIGHT) {
-                        animation = standRightAnimation;
-                    } else {
-                        animation = standLeftAnimation;
-                    }
-                    break;
-                }
-                case JUMPING: {
-                    if (entity.direction == Entity.Direction.RIGHT) {
-                        animation = jumpRightAnimation;
-                    } else {
-                        animation = jumpLeftAnimation;
-                    }
-                    break;
-                }
-                default:{
-                    if(entity.direction == Entity.Direction.RIGHT) {
-                        animation = walkRightAnimation;
-                    } else {
-
-                        animation = walkLeftAnimation;
-                    }
-                }
-            }
-            return animation;
-        }
+        return entityAnimations.get(entity.getClass()).getAnimation(entity.state, entity.direction);
     }
 
     public enum CellType {
@@ -269,9 +285,23 @@ public class Assets {
 
         TiledMapTileLayer tileLayer = new TiledMapTileLayer(width, height, 8, 8);
         for (int y = 0; y < height; y++) {
-            int[] row = dataValue.get(y).asIntArray();
+            String row = dataValue.get(y).asString();
             for (int x = 0; x < width; x++) {
-                int id = row[x];
+                char c = row.charAt(x);
+                int id =0;
+                switch (c) {
+                    case '·':
+                        id = 0;
+                        break;
+                    case '#':
+                        id = 1;
+                        break;
+                    case '=':
+                        id = 2;
+                        break;
+                }
+                //int id = row[x];oasIntArray();
+
                 if (id != 0) {
                     TiledMapTileLayer.Cell cell = new TiledMapTileLayer.Cell();
                     MapTile mapTile = tileSet.getMapTile(id);
