@@ -6,6 +6,7 @@ package com.dg.smania;
 public class Monster extends Entity {
     private static class MonsterInput implements EntityInput {
 
+
         @Override
         public boolean action() {
             return false;
@@ -29,7 +30,16 @@ public class Monster extends Entity {
 
     private static PhysicsProperties physicsProperties = new PhysicsProperties(35f, 75f, 0.85f, true);
 
+    private boolean alive = true;
+
     public Monster() {
         super(new MonsterInput(), physicsProperties);
+    }
+
+    protected void onDamaged() {
+        alive = false;
+    }
+    public boolean isAlive() {
+        return alive;
     }
 }

@@ -42,7 +42,7 @@ public class Bullet extends Entity {
     }
 
     @Override
-    protected void onCollission() {
+    protected void onCollidedWithTile() {
         alive = false;
     }
 
@@ -51,5 +51,10 @@ public class Bullet extends Entity {
         free(this);
     }
 
+    @Override
+    protected void onCollidedWithEntity(Entity entity) {
+        entity.onDamaged();
+        alive = false;
+    };
 
 }

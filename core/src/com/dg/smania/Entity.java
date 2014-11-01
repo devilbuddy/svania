@@ -1,10 +1,11 @@
 package com.dg.smania;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Pool;
+
+import java.util.List;
 
 /**
  * Created by magnus on 2014-10-14.
@@ -57,8 +58,15 @@ public class Entity {
         JUMPING
     }
 
-    private static class CollisionRect extends Rectangle {
+    private static class CollisionRect extends Rectangle implements Pool.Poolable {
         public Assets.CellType cellType;
+        public Entity entity;
+
+        @Override
+        public void reset() {
+            cellType = Assets.CellType.VOID;
+            entity = null;
+        }
     };
 
     public static class PhysicsProperties {
@@ -96,7 +104,7 @@ public class Entity {
     };
     private Array<CollisionRect> tiles = new Array<CollisionRect>();
 
-    private final EntityInput entityInput;
+    protected EntityInput entityInput;
     public final PhysicsProperties physicsProperties;
 
     public Entity(PhysicsProperties physicsProperties) {
@@ -119,9 +127,7 @@ public class Entity {
         }
     }
 
-    public void update(float delta) {
-        stateTime += delta;
-
+    private void handleInput() {
         if (entityInput.action()) {
             onAction();
         }
@@ -144,7 +150,9 @@ public class Entity {
             }
             direction = Direction.RIGHT;
         }
+    }
 
+    private void adjustVelocity() {
         if(physicsProperties.affectedByGravity) {
             // apply gravity
             velocity.add(0, GRAVITY);
@@ -161,6 +169,14 @@ public class Entity {
                 setState(State.STANDING);
             }
         }
+
+    }
+
+    public void update(float delta) {
+        stateTime += delta;
+
+        handleInput();
+        adjustVelocity();
 
         // multiply by delta time so we know how far we go
         // in this frame
@@ -183,15 +199,20 @@ public class Entity {
         }
         startY = (int) ((position.y) / Assets.TILE_SIZE);
         endY = (int) ((position.y + height) / Assets.TILE_SIZE);
-        getCollissionTiles(startX, startY, endX, endY, tiles);
+        getCollisionTiles(startX, startY, endX, endY, tiles);
         boundingBox.x += velocity.x;
         for (CollisionRect rect : tiles) {
-            boolean solid = rect.cellType == Assets.CellType.BLOCK;
-            if (solid && boundingBox.overlaps(rect)) {
-                velocity.x = 0;
-                onCollission();
-                break;
+            if(boundingBox.overlaps(rect)) {
+                boolean solid = rect.cellType == Assets.CellType.BLOCK;
+                if (solid) {
+                    velocity.x = 0;
+                    onCollidedWithTile();
+                    break;
+                } else if(rect.entity != null) {
+                    onCollidedWithEntity(rect.entity);
+                }
             }
+
         }
         boundingBox.x = position.x;
 
@@ -204,7 +225,7 @@ public class Entity {
         }
         startX = (int) ((position.x) / Assets.TILE_SIZE);
         endX = (int) ((position.x + width) / Assets.TILE_SIZE);
-        getCollissionTiles(startX, startY, endX, endY, tiles);
+        getCollisionTiles(startX, startY, endX, endY, tiles);
 
         // bottom position prior to movement
         float oldBottomY = boundingBox.y;
@@ -231,7 +252,7 @@ public class Entity {
                         grounded = true;
                         setState(State.WALKING);
                     }
-                    onCollission();
+                    onCollidedWithTile();
                     velocity.y = 0;
                     break;
                 }
@@ -249,17 +270,25 @@ public class Entity {
         velocity.x *= physicsProperties.damping;
     }
 
+    protected void onCollidedWithEntity(Entity entity) {
+    }
+
     protected void onAction() {
     }
 
-    protected void onCollission() {
+    protected void onCollidedWithTile() {
     }
 
     protected void onRemoved() {
 
     }
 
-    private void getCollissionTiles(int startX, int startY, int endX, int endY, Array<CollisionRect> tiles) {
+    protected void onDamaged() {
+
+    }
+
+
+    private void getCollisionTiles(int startX, int startY, int endX, int endY, Array<CollisionRect> tiles) {
         rectPool.freeAll(tiles);
         tiles.clear();
         for (int y = startY; y <= endY; y++) {
@@ -271,6 +300,17 @@ public class Entity {
                     rect.cellType = cellType;
                     tiles.add(rect);
                 }
+            }
+        }
+
+        List<Entity> entities = world.entities;
+        for (int i = 0; i < entities.size(); i++) {
+            Entity entity = entities.get(i);
+            if(entity != this && entity.boundingBox.overlaps(boundingBox)) {
+                CollisionRect rect = rectPool.obtain();
+                rect.set(entity.boundingBox);
+                rect.entity = entity;
+                tiles.add(rect);
             }
         }
     }
